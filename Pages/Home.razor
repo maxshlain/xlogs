@@ -1,0 +1,217 @@
+﻿@page "/"
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>Text File Editor</PageTitle>
+
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <div class="col-12 p-3">
+            <h1 class="mb-4">Text File Editor</h1>
+            
+            <div class="mb-3">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <input type="file" class="form-control" @ref="fileInput" accept=".txt,.js,.ts,.cs,.html,.css,.json,.xml,.md,.py,.java,.cpp,.c,.h,.sql,.log" />
+                            <button class="btn btn-primary" @onclick="LoadFile" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                }
+                                Load File
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <select class="form-select" @onchange="ChangeLanguage">
+                                    <option value="plaintext">Plain Text</option>
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="typescript">TypeScript</option>
+                                    <option value="csharp">C#</option>
+                                    <option value="html">HTML</option>
+                                    <option value="css">CSS</option>
+                                    <option value="json">JSON</option>
+                                    <option value="xml">XML</option>
+                                    <option value="markdown">Markdown</option>
+                                    <option value="python">Python</option>
+                                    <option value="java">Java</option>
+                                    <option value="cpp">C++</option>
+                                    <option value="sql">SQL</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <select class="form-select" @onchange="ChangeTheme">
+                                    <option value="vs-dark">Dark</option>
+                                    <option value="vs">Light</option>
+                                    <option value="hc-black">High Contrast</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @errorMessage
+                    <button type="button" class="btn-close" @onclick="ClearError"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(currentFileName))
+            {
+                <div class="alert alert-info" role="alert">
+                    <strong>Current File:</strong> @currentFileName (@currentFileSize KB)
+                </div>
+            }
+
+            <div class="editor-container">
+                <div id="monaco-editor" style="height: 500px; border: 1px solid #ccc;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ElementReference fileInput;
+    private bool isLoading = false;
+    private string errorMessage = "";
+    private string currentFileName = "";
+    private string currentFileSize = "";
+    private string currentLanguage = "plaintext";
+    private string currentTheme = "vs-dark";
+    private bool editorInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("monacoEditorInterop.init", "monaco-editor", currentLanguage, currentTheme);
+                editorInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to initialize editor: {ex.Message}";
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task LoadFile()
+    {
+        if (!editorInitialized)
+        {
+            errorMessage = "Editor not initialized yet. Please wait a moment and try again.";
+            StateHasChanged();
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            var fileResult = await JSRuntime.InvokeAsync<FileResult>("fileReaderInterop.readFileAsText", fileInput);
+            
+            currentFileName = fileResult.FileName;
+            currentFileSize = Math.Round(fileResult.FileSize / 1024.0, 2).ToString();
+            
+            // Auto-detect language based on file extension
+            var extension = Path.GetExtension(fileResult.FileName).ToLower();
+            var detectedLanguage = DetectLanguageFromExtension(extension);
+            if (detectedLanguage != currentLanguage)
+            {
+                currentLanguage = detectedLanguage;
+                await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setLanguage", currentLanguage);
+            }
+
+            await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setValue", fileResult.Content);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading file: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ChangeLanguage(ChangeEventArgs e)
+    {
+        if (editorInitialized)
+        {
+            currentLanguage = e.Value?.ToString() ?? "plaintext";
+            await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setLanguage", currentLanguage);
+        }
+    }
+
+    private async Task ChangeTheme(ChangeEventArgs e)
+    {
+        if (editorInitialized)
+        {
+            currentTheme = e.Value?.ToString() ?? "vs-dark";
+            await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setTheme", currentTheme);
+        }
+    }
+
+    private void ClearError()
+    {
+        errorMessage = "";
+    }
+
+    private string DetectLanguageFromExtension(string extension)
+    {
+        return extension switch
+        {
+            ".js" => "javascript",
+            ".ts" => "typescript",
+            ".cs" => "csharp",
+            ".html" => "html",
+            ".css" => "css",
+            ".json" => "json",
+            ".xml" => "xml",
+            ".md" => "markdown",
+            ".py" => "python",
+            ".java" => "java",
+            ".cpp" or ".cc" or ".cxx" => "cpp",
+            ".c" => "c",
+            ".h" or ".hpp" => "cpp",
+            ".sql" => "sql",
+            ".log" => "plaintext",
+            _ => "plaintext"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (editorInitialized)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("monacoEditorInterop.dispose");
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+    }
+
+    public class FileResult
+    {
+        public string Content { get; set; } = "";
+        public string FileName { get; set; } = "";
+        public long FileSize { get; set; }
+        public string FileType { get; set; } = "";
+    }
+}
