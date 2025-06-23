@@ -19,6 +19,14 @@ window.monacoEditorInterop = {
                             wordWrap: 'on',
                             scrollBeyondLastLine: false
                         });
+                        
+                        // Ensure editor resizes properly
+                        window.addEventListener('resize', () => {
+                            if (monacoEditor) {
+                                monacoEditor.layout();
+                            }
+                        });
+                        
                         resolve();
                     } else {
                         reject('Container not found');

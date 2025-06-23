@@ -5,75 +5,73 @@
 
 <PageTitle>Text File Editor</PageTitle>
 
-<div class="container-fluid h-100">
-    <div class="row h-100">
-        <div class="col-12 p-3">
-            <h1 class="mb-4">Text File Editor</h1>
-            
-            <div class="mb-3">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <div class="input-group">
-                            <input type="file" class="form-control" @ref="fileInput" accept=".txt,.js,.ts,.cs,.html,.css,.json,.xml,.md,.py,.java,.cpp,.c,.h,.sql,.log" />
-                            <button class="btn btn-primary" @onclick="LoadFile" disabled="@isLoading">
-                                @if (isLoading)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                }
-                                Load File
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <select class="form-select" @onchange="ChangeLanguage">
-                                    <option value="plaintext">Plain Text</option>
-                                    <option value="javascript">JavaScript</option>
-                                    <option value="typescript">TypeScript</option>
-                                    <option value="csharp">C#</option>
-                                    <option value="html">HTML</option>
-                                    <option value="css">CSS</option>
-                                    <option value="json">JSON</option>
-                                    <option value="xml">XML</option>
-                                    <option value="markdown">Markdown</option>
-                                    <option value="python">Python</option>
-                                    <option value="java">Java</option>
-                                    <option value="cpp">C++</option>
-                                    <option value="sql">SQL</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <select class="form-select" @onchange="ChangeTheme">
-                                    <option value="vs-dark">Dark</option>
-                                    <option value="vs">Light</option>
-                                    <option value="hc-black">High Contrast</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+<div class="header-section">
+    <h1 class="mb-4">Text File Editor</h1>
+    
+    <div class="mb-3">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="file" class="form-control" @ref="fileInput" accept=".txt,.js,.ts,.cs,.html,.css,.json,.xml,.md,.py,.java,.cpp,.c,.h,.sql,.log" />
+                    <button class="btn btn-primary" @onclick="LoadFile" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        }
+                        Load File
+                    </button>
                 </div>
             </div>
-
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    @errorMessage
-                    <button type="button" class="btn-close" @onclick="ClearError"></button>
+            <div class="col-md-6">
+                <div class="row">
+                    <div class="col-md-6">
+                        <select class="form-select" @onchange="ChangeLanguage">
+                            <option value="plaintext">Plain Text</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="typescript">TypeScript</option>
+                            <option value="csharp">C#</option>
+                            <option value="html">HTML</option>
+                            <option value="css">CSS</option>
+                            <option value="json">JSON</option>
+                            <option value="xml">XML</option>
+                            <option value="markdown">Markdown</option>
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                            <option value="cpp">C++</option>
+                            <option value="sql">SQL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select" @onchange="ChangeTheme">
+                            <option value="vs-dark">Dark</option>
+                            <option value="vs">Light</option>
+                            <option value="hc-black">High Contrast</option>
+                        </select>
+                    </div>
                 </div>
-            }
-
-            @if (!string.IsNullOrEmpty(currentFileName))
-            {
-                <div class="alert alert-info" role="alert">
-                    <strong>Current File:</strong> @currentFileName (@currentFileSize KB)
-                </div>
-            }
-
-            <div class="editor-container">
-                <div id="monaco-editor" style="height: 500px; border: 1px solid #ccc;"></div>
             </div>
         </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="ClearError"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(currentFileName))
+    {
+        <div class="alert alert-info" role="alert">
+            <strong>Current File:</strong> @currentFileName (@currentFileSize KB)
+        </div>
+    }
+</div>
+
+<div class="editor-section">
+    <div class="editor-container">
+        <div id="monaco-editor" style="border: 1px solid #ccc;"></div>
     </div>
 </div>
 

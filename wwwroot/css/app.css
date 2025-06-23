@@ -3,42 +3,76 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden;
 }
 
 #app {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    margin: 0;
+    padding: 0;
 }
 
-.page-fullscreen {
+.app-container {
     height: 100vh;
     display: flex;
     flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1rem;
 }
 
 .container-fluid.h-100 {
     height: 100% !important;
     display: flex;
     flex-direction: column;
+    padding: 0;
+    margin: 0;
 }
 
 .row.h-100 {
     height: 100% !important;
     flex: 1;
+    margin: 0;
 }
 
 .editor-container {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 400px;
+    min-height: 0;
+    margin-bottom: 0;
 }
 
 #monaco-editor {
     flex: 1 !important;
     height: auto !important;
-    min-height: 400px;
+    min-height: 0;
+    margin-bottom: 0;
+}
+
+.editor-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+    min-height: 0;
+}
+
+.app-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 12px;
+    color: #6c757d;
+    flex-shrink: 0;
 }
 
 h1:focus {
