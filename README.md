@@ -62,7 +62,24 @@ This application supports loading and sharing content via URL parameters, making
 3. The shareable URL will be automatically copied to your clipboard
 4. Share the URL with others - they can access the content by simply visiting the link
 
-#### Method 2: Manual URL Creation
+#### Method 2: Using the Peek Script (Automated)
+
+For convenience, you can use the included `peek.py` script to automatically generate shareable URLs:
+
+```bash
+# Download the script from GitHub Pages
+curl -O https://maximshlain.github.io/xlogs/peek.py
+
+# Generate a URL for your file
+python peek.py mylog.txt
+
+# Or specify a custom base URL
+python peek.py mylog.txt https://maximshlain.github.io/xlogs/
+```
+
+The script will automatically compress your file, encode it, and generate a complete shareable URL.
+
+#### Method 3: Manual URL Creation
 You can manually create shareable URLs by converting your local file content to compressed base64 and adding it as a URL parameter.
 
 **For a local file `mylog.txt`:**

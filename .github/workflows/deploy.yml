@@ -62,6 +62,9 @@ jobs:
       - name: Add .nojekyll file
         run: touch release/wwwroot/.nojekyll
         
+      - name: Copy peek.py to published site
+        run: cp peek.py release/wwwroot/peek.py
+        
       - name: Setup Pages
         uses: actions/configure-pages@v4
         

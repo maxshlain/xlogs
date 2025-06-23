@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-File URL Generator for Text File Editor SPA
+Peek - File URL Generator for Text File Editor SPA
 
 This script compresses a text file and generates a shareable URL for the Blazor WebAssembly SPA.
 The URL contains the compressed and base64-encoded file content as parameters.
 
 Usage:
-    python generate_url.py <file_path> [base_url]
+    python peek.py <file_path> [base_url]
 
 Arguments:
     file_path: Path to the text file to compress and encode
     base_url: Optional base URL for the SPA (defaults to http://localhost:5000)
 
 Example:
-    python generate_url.py example.txt
-    python generate_url.py example.txt https://myapp.com
+    python peek.py example.txt
+    python peek.py example.txt https://myapp.com
 """
 
 import argparse
@@ -153,9 +153,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
-  python generate_url.py example.txt
-  python generate_url.py /path/to/file.py https://myapp.com
-  python generate_url.py document.md http://localhost:8080
+  python peek.py example.txt
+  python peek.py /path/to/file.py https://myapp.com
+  python peek.py document.md http://localhost:8080
         '''
     )
     
