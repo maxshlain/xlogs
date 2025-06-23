@@ -14,6 +14,7 @@ The application is automatically deployed to GitHub Pages: [https://maximshlain.
 - **Language Selection**: Manual language selection for the editor
 - **Theme Switching**: Dark, Light, and High Contrast themes
 - **File Information**: Display file name and size
+- **URL Content Sharing**: Load and share content via URL parameters
 - **Responsive Design**: Works on various screen sizes
 - **Error Handling**: Comprehensive user feedback
 
@@ -48,6 +49,88 @@ The application is automatically deployed to GitHub Pages: [https://maximshlain.
     └── workflows/
         └── deploy.yml         # GitHub Actions workflow for deployment
 ```
+
+## 🔗 URL Content Sharing
+
+This application supports loading and sharing content via URL parameters, making it easy to share log files and other text content without uploading files to a server.
+
+### How to Share Content
+
+#### Method 1: Using the Share Button (Recommended)
+1. Load or paste your content into the editor
+2. Click the **"Share"** button next to the file upload
+3. The shareable URL will be automatically copied to your clipboard
+4. Share the URL with others - they can access the content by simply visiting the link
+
+#### Method 2: Manual URL Creation
+You can manually create shareable URLs by converting your local file content to base64 and adding it as a URL parameter.
+
+**For a local file `mylog.txt`:**
+
+1. **Convert file to base64** (choose one method):
+   
+   **On Linux/macOS:**
+   ```bash
+   base64 -i mylog.txt | tr -d '\n' | sed 's/+/-/g; s/\//_/g; s/=//g'
+   ```
+   
+   **On Windows (PowerShell):**
+   ```powershell
+   $content = Get-Content -Path "mylog.txt" -Raw
+   $bytes = [System.Text.Encoding]::UTF8.GetBytes($content)
+   $base64 = [System.Convert]::ToBase64String($bytes)
+   $urlSafe = $base64 -replace '\+', '-' -replace '/', '_' -replace '=', ''
+   Write-Output $urlSafe
+   ```
+   
+   **Using Node.js:**
+   ```javascript
+   const fs = require('fs');
+   const content = fs.readFileSync('mylog.txt', 'utf8');
+   const base64 = Buffer.from(content, 'utf8').toString('base64')
+     .replace(/\+/g, '-')
+     .replace(/\//g, '_')
+     .replace(/=/g, '');
+   console.log(base64);
+   ```
+
+2. **Create the shareable URL:**
+   ```
+   https://maximshlain.github.io/xlogs/?content=BASE64_CONTENT&filename=mylog.txt
+   ```
+   Replace `BASE64_CONTENT` with the output from step 1.
+
+### URL Parameters
+
+- `content` (required): Base64-encoded file content (URL-safe: `+` → `-`, `/` → `_`, padding `=` removed)
+- `filename` (optional): Original filename for proper syntax highlighting and display
+
+### Example
+
+**Original file content:**
+```
+Hello World!
+This is a test log file.
+```
+
+**Generated URL:**
+```
+https://maximshlain.github.io/xlogs/?content=SGVsbG8gV29ybGQhClRoaXMgaXMgYSB0ZXN0IGxvZyBmaWxlLg&filename=test.log
+```
+
+### Advantages of URL Sharing
+
+- ✅ **No server storage** - Content is embedded in the URL
+- ✅ **Instant sharing** - No upload time required
+- ✅ **Privacy-friendly** - No data stored on external servers
+- ✅ **Permanent links** - URLs work as long as the application is hosted
+- ✅ **Cross-platform** - Works on any device with a web browser
+
+### Limitations
+
+- URLs have practical length limits (typically ~2000 characters for compatibility)
+- Very large files may create unwieldy URLs
+- Content is visible in browser history and server logs (don't share sensitive data)
 
 ## 🚀 Deployment
 

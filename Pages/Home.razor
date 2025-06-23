@@ -1,6 +1,9 @@
 ﻿@page "/"
 @using Microsoft.JSInterop
+@using System.Text
+@using Microsoft.AspNetCore.Components
 @inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <PageTitle>Text File Editor</PageTitle>
@@ -8,19 +11,44 @@
 <div class="header-section">
     <h1 class="mb-4">Text File Editor</h1>
     
-    <div class="mb-3">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <p class="text-muted">
+                Upload text files or load content from URL parameters. 
+                <a href="#" data-bs-toggle="collapse" data-bs-target="#helpSection" aria-expanded="false">
+                    <small>Learn more about URL sharing</small>
+                </a>
+            </p>
+            <div class="collapse" id="helpSection">
+                <div class="card card-body">
+                    <h6>URL Content Loading</h6>
+                    <p><strong>Load content from URL:</strong> Add <code>?content=base64EncodedContent</code> to the URL</p>
+                    <p><strong>Optional filename:</strong> Add <code>&filename=myfile.log</code> to set the filename</p>
+                    <p><strong>Example:</strong> <code>yoursite.com/?content=SGVsbG8gV29ybGQ%3D&filename=hello.txt</code></p>
+                    <p><strong>Share button:</strong> Use the Share button to generate a URL with current editor content</p>
+                </div>
+            </div>
+        </div>
+    </div>
+      <div class="mb-3">
         <div class="row align-items-center">
             <div class="col-md-6">
                 <div class="input-group">
-                    <input type="file" class="form-control" @ref="fileInput" accept=".txt,.js,.ts,.cs,.html,.css,.json,.xml,.md,.py,.java,.cpp,.c,.h,.sql,.log" />
-                    <button class="btn btn-primary" @onclick="LoadFile" disabled="@isLoading">
+                    <input type="file" class="form-control" @ref="fileInput" accept=".txt,.js,.ts,.cs,.html,.css,.json,.xml,.md,.py,.java,.cpp,.c,.h,.sql,.log" />                    <button class="btn btn-primary" @onclick="LoadFile" disabled="@isLoading">
                         @if (isLoading)
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         }
                         Load File
                     </button>
+                    <button class="btn btn-outline-secondary ms-2" @onclick="ShareContent" disabled="@(!editorInitialized || isLoading)">
+                        <i class="bi bi-share"></i> Share
+                    </button>
                 </div>
+                @if (hasUrlContent)
+                {
+                    <small class="text-muted mt-1">Content loaded from URL parameter</small>
+                }
             </div>
             <div class="col-md-6">
                 <div class="row">
@@ -51,13 +79,19 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    @if (!string.IsNullOrEmpty(errorMessage))
+    </div>    @if (!string.IsNullOrEmpty(errorMessage))
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             @errorMessage
             <button type="button" class="btn-close" @onclick="ClearError"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="ClearSuccess"></button>
         </div>
     }
 
@@ -76,23 +110,25 @@
 </div>
 
 @code {
-    private ElementReference fileInput;
-    private bool isLoading = false;
+    private ElementReference fileInput;    private bool isLoading = false;
     private string errorMessage = "";
+    private string successMessage = "";
     private string currentFileName = "";
     private string currentFileSize = "";
     private string currentLanguage = "plaintext";
     private string currentTheme = "vs-dark";
     private bool editorInitialized = false;
+    private bool hasUrlContent = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            try
+    {        if (firstRender)
+        {            try
             {
                 await JSRuntime.InvokeVoidAsync("monacoEditorInterop.init", "monaco-editor", currentLanguage, currentTheme);
                 editorInitialized = true;
+                
+                // Check for URL parameters after editor is initialized
+                await LoadContentFromUrl();
             }
             catch (Exception ex)
             {
@@ -168,6 +204,73 @@
     {
         errorMessage = "";
     }
+    
+    private void ClearSuccess()
+    {
+        successMessage = "";
+    }    private async Task ShareContent()
+    {
+        if (!editorInitialized)
+        {
+            errorMessage = "Editor not initialized yet.";
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            successMessage = "";
+            errorMessage = "";
+            
+            // Debug: Check if JavaScript function exists
+            var jsObjectExists = await JSRuntime.InvokeAsync<bool>("eval", "typeof window.urlContentInterop !== 'undefined'");
+            var jsFunctionExists = await JSRuntime.InvokeAsync<bool>("eval", "typeof window.urlContentInterop?.generateShareableUrl === 'function'");
+            
+            if (!jsObjectExists)
+            {
+                errorMessage = "JavaScript urlContentInterop object not found. Please refresh the page.";
+                StateHasChanged();
+                return;
+            }
+            
+            if (!jsFunctionExists)
+            {
+                errorMessage = "JavaScript generateShareableUrl function not found. Please refresh the page.";
+                StateHasChanged();
+                return;
+            }
+            
+            var content = await JSRuntime.InvokeAsync<string>("monacoEditorInterop.getValue");
+            
+            if (string.IsNullOrEmpty(content))
+            {
+                errorMessage = "No content to share. Please load a file or add some content first.";
+                StateHasChanged();
+                return;
+            }
+
+            var filename = !string.IsNullOrEmpty(currentFileName) ? currentFileName : "shared-content.log";
+            var shareUrl = await JSRuntime.InvokeAsync<string>("urlContentInterop.generateShareableUrl", content, filename);
+            var copied = await JSRuntime.InvokeAsync<bool>("urlContentInterop.copyToClipboard", shareUrl);
+            
+            if (copied)
+            {
+                successMessage = "Shareable URL copied to clipboard! Anyone can access this content by visiting the URL.";
+            }
+            else
+            {
+                errorMessage = "Failed to copy URL to clipboard. Please copy it manually: " + shareUrl;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error generating shareable URL: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
 
     private string DetectLanguageFromExtension(string extension)
     {
@@ -190,6 +293,101 @@
             ".log" => "plaintext",
             _ => "plaintext"
         };
+    }    private async Task LoadContentFromUrl()
+    {
+        try
+        {
+            var uri = new Uri(Navigation.Uri);
+            var queryString = uri.Query;
+            
+            if (!string.IsNullOrEmpty(queryString))
+            {
+                var queryParams = ParseQueryString(queryString);
+                var encodedContent = queryParams.GetValueOrDefault("content");
+                var fileName = queryParams.GetValueOrDefault("filename", "URL-Content.log");
+                
+                if (!string.IsNullOrEmpty(encodedContent))
+                {
+                    // Decode base64 content
+                    var decodedContent = DecodeBase64(encodedContent);
+                    
+                    if (!string.IsNullOrEmpty(decodedContent))
+                    {
+                        // Set the content in the editor
+                        await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setValue", decodedContent);
+                        
+                        // Update file info
+                        currentFileName = fileName;
+                        currentFileSize = Math.Round(Encoding.UTF8.GetByteCount(decodedContent) / 1024.0, 2).ToString();
+                        hasUrlContent = true;
+                        
+                        // Auto-detect language based on file extension
+                        var extension = Path.GetExtension(fileName).ToLower();
+                        var detectedLanguage = DetectLanguageFromExtension(extension);
+                        if (detectedLanguage != currentLanguage)
+                        {
+                            currentLanguage = detectedLanguage;
+                            await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setLanguage", currentLanguage);
+                        }
+                        
+                        StateHasChanged();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading content from URL: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+    
+    private Dictionary<string, string> ParseQueryString(string queryString)
+    {
+        var result = new Dictionary<string, string>();
+        
+        if (string.IsNullOrEmpty(queryString))
+            return result;
+            
+        // Remove leading '?' if present
+        if (queryString.StartsWith("?"))
+            queryString = queryString.Substring(1);
+            
+        var pairs = queryString.Split('&');
+        foreach (var pair in pairs)
+        {
+            var parts = pair.Split('=', 2);
+            if (parts.Length == 2)
+            {
+                var key = Uri.UnescapeDataString(parts[0]);
+                var value = Uri.UnescapeDataString(parts[1]);
+                result[key] = value;
+            }
+        }
+        
+        return result;
+    }
+    
+    private string DecodeBase64(string encodedContent)
+    {
+        try
+        {
+            // Handle URL-safe base64 encoding
+            encodedContent = encodedContent.Replace('-', '+').Replace('_', '/');
+            
+            // Add padding if necessary
+            while (encodedContent.Length % 4 != 0)
+            {
+                encodedContent += "=";
+            }
+            
+            var bytes = Convert.FromBase64String(encodedContent);
+            return Encoding.UTF8.GetString(bytes);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to decode base64 content: {ex.Message}");
+        }
     }
 
     public async ValueTask DisposeAsync()

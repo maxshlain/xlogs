@@ -25,9 +25,82 @@
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
-    </div>
-    <script src="_framework/blazor.webassembly.js"></script>
+    </div>    <script src="_framework/blazor.webassembly.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    
+    <!-- Define URL content utilities inline to ensure they're available immediately -->
+    <script>
+        window.urlContentInterop = {
+            generateShareableUrl: function (content, filename) {
+                console.log('generateShareableUrl called with:', content ? content.length : 0, 'characters');
+                try {
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    const encodedContent = btoa(unescape(encodeURIComponent(content)))
+                        .replace(/\+/g, '-')
+                        .replace(/\//g, '_')
+                        .replace(/=/g, '');
+                    
+                    const params = new URLSearchParams();
+                    params.append('content', encodedContent);
+                    if (filename) {
+                        params.append('filename', filename);
+                    }
+                    
+                    const url = baseUrl + '?' + params.toString();
+                    console.log('Generated URL length:', url.length);
+                    return url;
+                } catch (error) {
+                    console.error('Error in generateShareableUrl:', error);
+                    throw error;
+                }
+            },
+            
+            copyToClipboard: function (text) {
+                console.log('copyToClipboard called');
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        return navigator.clipboard.writeText(text).then(() => {
+                            console.log('Clipboard copy successful');
+                            return true;
+                        }).catch((error) => {
+                            console.log('Clipboard API failed, trying fallback:', error);
+                            return this.fallbackCopyToClipboard(text);
+                        });
+                    } else {
+                        console.log('Clipboard API not available, using fallback');
+                        return Promise.resolve(this.fallbackCopyToClipboard(text));
+                    }
+                } catch (error) {
+                    console.error('Error in copyToClipboard:', error);
+                    return Promise.resolve(false);
+                }
+            },
+            
+            fallbackCopyToClipboard: function(text) {
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    textArea.style.top = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    console.log('Fallback copy result:', successful);
+                    return successful;
+                } catch (error) {
+                    console.error('Fallback copy failed:', error);
+                    return false;
+                }
+            }
+        };
+        
+        console.log('urlContentInterop initialized inline successfully');
+    </script>
+    
     <script src="js/monaco-editor.js"></script>
 </body>
 

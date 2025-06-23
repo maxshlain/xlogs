@@ -1,5 +1,7 @@
+// Global variable to store Monaco Editor instance
 let monacoEditor = null;
 
+// Monaco Editor interop functions
 window.monacoEditorInterop = {
     init: function (containerId, language, theme) {
         return new Promise((resolve, reject) => {
