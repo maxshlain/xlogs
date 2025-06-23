@@ -131,7 +131,9 @@
                 await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setLanguage", currentLanguage);
             }
 
-            await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setValue", fileResult.Content);
+            var content = fileResult.Content ?? "";
+
+            await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setValue", content);
         }
         catch (Exception ex)
         {
