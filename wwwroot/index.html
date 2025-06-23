@@ -28,20 +28,26 @@
     </div>    <script src="_framework/blazor.webassembly.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
     
-    <!-- Define URL content utilities inline to ensure they're available immediately -->
-    <script>
+    <!-- Define URL content utilities inline to ensure they're available immediately -->    <script>
         window.urlContentInterop = {
-            generateShareableUrl: function (content, filename) {
+            generateShareableUrl: async function (content, filename) {
                 console.log('generateShareableUrl called with:', content ? content.length : 0, 'characters');
                 try {
                     const baseUrl = window.location.origin + window.location.pathname;
-                    const encodedContent = btoa(unescape(encodeURIComponent(content)))
+                    
+                    // Compress the content first
+                    const compressedContent = await this.compressString(content);
+                    console.log('Content compressed from', content.length, 'to', compressedContent.length, 'bytes');
+                    
+                    // Convert compressed bytes to base64 URL-safe
+                    const encodedContent = btoa(String.fromCharCode(...compressedContent))
                         .replace(/\+/g, '-')
                         .replace(/\//g, '_')
                         .replace(/=/g, '');
                     
                     const params = new URLSearchParams();
                     params.append('content', encodedContent);
+                    params.append('compressed', '1'); // Flag to indicate compression
                     if (filename) {
                         params.append('filename', filename);
                     }
@@ -52,6 +58,81 @@
                 } catch (error) {
                     console.error('Error in generateShareableUrl:', error);
                     throw error;
+                }
+            },
+
+            compressString: async function(str) {
+                try {
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(str);
+                    
+                    const compressionStream = new CompressionStream('deflate');
+                    const writer = compressionStream.writable.getWriter();
+                    const reader = compressionStream.readable.getReader();
+                    
+                    const chunks = [];
+                    const readPromise = (async () => {
+                        let result;
+                        while (!(result = await reader.read()).done) {
+                            chunks.push(result.value);
+                        }
+                    })();
+                    
+                    await writer.write(data);
+                    await writer.close();
+                    await readPromise;
+                    
+                    // Combine all chunks into a single Uint8Array
+                    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+                    const result = new Uint8Array(totalLength);
+                    let offset = 0;
+                    for (const chunk of chunks) {
+                        result.set(chunk, offset);
+                        offset += chunk.length;
+                    }
+                    
+                    return result;
+                } catch (error) {
+                    console.error('Compression failed:', error);
+                    // Fallback to uncompressed if compression fails
+                    const encoder = new TextEncoder();
+                    return encoder.encode(str);                }
+            },
+
+            decompressString: async function(compressedBytes) {
+                try {
+                    const decompressionStream = new DecompressionStream('deflate');
+                    const writer = decompressionStream.writable.getWriter();
+                    const reader = decompressionStream.readable.getReader();
+                    
+                    const chunks = [];
+                    const readPromise = (async () => {
+                        let result;
+                        while (!(result = await reader.read()).done) {
+                            chunks.push(result.value);
+                        }
+                    })();
+                    
+                    await writer.write(compressedBytes);
+                    await writer.close();
+                    await readPromise;
+                    
+                    // Combine all chunks into a single Uint8Array
+                    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+                    const result = new Uint8Array(totalLength);
+                    let offset = 0;
+                    for (const chunk of chunks) {
+                        result.set(chunk, offset);
+                        offset += chunk.length;
+                    }
+                    
+                    const decoder = new TextDecoder();
+                    return decoder.decode(result);
+                } catch (error) {
+                    console.error('Decompression failed:', error);
+                    // Fallback: assume it's uncompressed text
+                    const decoder = new TextDecoder();
+                    return decoder.decode(compressedBytes);
                 }
             },
             

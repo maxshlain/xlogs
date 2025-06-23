@@ -63,46 +63,62 @@ This application supports loading and sharing content via URL parameters, making
 4. Share the URL with others - they can access the content by simply visiting the link
 
 #### Method 2: Manual URL Creation
-You can manually create shareable URLs by converting your local file content to base64 and adding it as a URL parameter.
+You can manually create shareable URLs by converting your local file content to compressed base64 and adding it as a URL parameter.
 
 **For a local file `mylog.txt`:**
 
-1. **Convert file to base64** (choose one method):
+1. **Convert file to compressed base64** (choose one method):
    
-   **On Linux/macOS:**
-   ```bash
-   base64 -i mylog.txt | tr -d '\n' | sed 's/+/-/g; s/\//_/g; s/=//g'
-   ```
-   
-   **On Windows (PowerShell):**
-   ```powershell
-   $content = Get-Content -Path "mylog.txt" -Raw
-   $bytes = [System.Text.Encoding]::UTF8.GetBytes($content)
-   $base64 = [System.Convert]::ToBase64String($bytes)
-   $urlSafe = $base64 -replace '\+', '-' -replace '/', '_' -replace '=', ''
-   Write-Output $urlSafe
-   ```
-   
-   **Using Node.js:**
+   **Using Node.js (Recommended - with compression):**
    ```javascript
    const fs = require('fs');
+   const zlib = require('zlib');
+   
    const content = fs.readFileSync('mylog.txt', 'utf8');
-   const base64 = Buffer.from(content, 'utf8').toString('base64')
+   const compressed = zlib.deflateSync(Buffer.from(content, 'utf8'));
+   const base64 = compressed.toString('base64')
      .replace(/\+/g, '-')
      .replace(/\//g, '_')
      .replace(/=/g, '');
    console.log(base64);
    ```
+   
+   **Using Python (with compression):**
+   ```python
+   import zlib
+   import base64
+   
+   with open('mylog.txt', 'r', encoding='utf-8') as f:
+       content = f.read()
+   
+   compressed = zlib.compress(content.encode('utf-8'))
+   base64_content = base64.b64encode(compressed).decode('ascii')
+   url_safe = base64_content.replace('+', '-').replace('/', '_').replace('=', '')
+   print(url_safe)
+   ```
+   
+   **Legacy method (uncompressed - may hit URL limits):**
+   ```bash
+   base64 -i mylog.txt | tr -d '\n' | sed 's/+/-/g; s/\//_/g; s/=//g'
+   ```
 
 2. **Create the shareable URL:**
+   
+   **For compressed content (recommended):**
+   ```
+   https://maximshlain.github.io/xlogs/?content=COMPRESSED_BASE64_CONTENT&compressed=1&filename=mylog.txt
+   ```
+   
+   **For uncompressed content (legacy):**
    ```
    https://maximshlain.github.io/xlogs/?content=BASE64_CONTENT&filename=mylog.txt
    ```
-   Replace `BASE64_CONTENT` with the output from step 1.
+   Replace `COMPRESSED_BASE64_CONTENT` or `BASE64_CONTENT` with the output from step 1.
 
 ### URL Parameters
 
 - `content` (required): Base64-encoded file content (URL-safe: `+` → `-`, `/` → `_`, padding `=` removed)
+- `compressed` (optional): Set to `1` if the content is compressed with deflate algorithm
 - `filename` (optional): Original filename for proper syntax highlighting and display
 
 ### Example
@@ -125,12 +141,14 @@ https://maximshlain.github.io/xlogs/?content=SGVsbG8gV29ybGQhClRoaXMgaXMgYSB0ZXN
 - ✅ **Privacy-friendly** - No data stored on external servers
 - ✅ **Permanent links** - URLs work as long as the application is hosted
 - ✅ **Cross-platform** - Works on any device with a web browser
+- ✅ **Compression support** - Larger files supported through deflate compression
 
 ### Limitations
 
 - URLs have practical length limits (typically ~2000 characters for compatibility)
-- Very large files may create unwieldy URLs
+- Very large files may still create unwieldy URLs even with compression
 - Content is visible in browser history and server logs (don't share sensitive data)
+- Compression requires modern browsers that support the Compression Streams API
 
 ## 🚀 Deployment
 

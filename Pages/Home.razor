@@ -247,9 +247,7 @@
                 errorMessage = "No content to share. Please load a file or add some content first.";
                 StateHasChanged();
                 return;
-            }
-
-            var filename = !string.IsNullOrEmpty(currentFileName) ? currentFileName : "shared-content.log";
+            }            var filename = !string.IsNullOrEmpty(currentFileName) ? currentFileName : "shared-content.log";
             var shareUrl = await JSRuntime.InvokeAsync<string>("urlContentInterop.generateShareableUrl", content, filename);
             var copied = await JSRuntime.InvokeAsync<bool>("urlContentInterop.copyToClipboard", shareUrl);
             
@@ -305,11 +303,22 @@
                 var queryParams = ParseQueryString(queryString);
                 var encodedContent = queryParams.GetValueOrDefault("content");
                 var fileName = queryParams.GetValueOrDefault("filename", "URL-Content.log");
+                var isCompressed = queryParams.GetValueOrDefault("compressed") == "1";
                 
                 if (!string.IsNullOrEmpty(encodedContent))
                 {
-                    // Decode base64 content
-                    var decodedContent = DecodeBase64(encodedContent);
+                    string decodedContent;
+                    
+                    if (isCompressed)
+                    {
+                        // Handle compressed content using JavaScript decompression
+                        decodedContent = await DecompressBase64Content(encodedContent);
+                    }
+                    else
+                    {
+                        // Handle uncompressed content (backward compatibility)
+                        decodedContent = DecodeBase64(encodedContent);
+                    }
                     
                     if (!string.IsNullOrEmpty(decodedContent))
                     {
@@ -364,8 +373,33 @@
                 result[key] = value;
             }
         }
-        
-        return result;
+          return result;
+    }
+    
+    private async Task<string> DecompressBase64Content(string encodedContent)
+    {
+        try
+        {
+            // Handle URL-safe base64 encoding
+            encodedContent = encodedContent.Replace('-', '+').Replace('_', '/');
+            
+            // Add padding if necessary
+            while (encodedContent.Length % 4 != 0)
+            {
+                encodedContent += "=";
+            }
+            
+            // Convert base64 to bytes
+            var compressedBytes = Convert.FromBase64String(encodedContent);
+            
+            // Use JavaScript decompression
+            var result = await JSRuntime.InvokeAsync<string>("urlContentInterop.decompressString", compressedBytes);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to decompress base64 content: {ex.Message}");
+        }
     }
     
     private string DecodeBase64(string encodedContent)
