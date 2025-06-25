@@ -105,3 +105,10 @@ window.fileReaderInterop = {
         });
     }
 };
+
+// Log that the interop objects are ready
+console.log('Monaco Editor JavaScript interop objects loaded:', {
+    monacoEditorInterop: typeof window.monacoEditorInterop,
+    fileReaderInterop: typeof window.fileReaderInterop,
+    fileDownloadInterop: typeof window.fileDownloadInterop
+});

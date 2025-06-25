@@ -41,6 +41,9 @@
                         }
                         Load File
                     </button>
+                    <button class="btn btn-success ms-2" @onclick="SaveFile" disabled="@(!editorInitialized || isLoading)">
+                        <i class="bi bi-download"></i> Save
+                    </button>
                     <button class="btn btn-outline-secondary ms-2" @onclick="ShareContent" disabled="@(!editorInitialized || isLoading)">
                         <i class="bi bi-share"></i> Share
                     </button>
@@ -208,6 +211,68 @@
     private void ClearSuccess()
     {
         successMessage = "";
+    }
+
+    private async Task SaveFile()
+    {
+        if (!editorInitialized)
+        {
+            errorMessage = "Editor not initialized yet.";
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            errorMessage = "";
+            successMessage = "";
+            
+            // Check if JavaScript functions exist
+            var jsObjectExists = await JSRuntime.InvokeAsync<bool>("eval", "typeof window.fileDownloadInterop !== 'undefined'");
+            var jsFunctionExists = await JSRuntime.InvokeAsync<bool>("eval", "typeof window.fileDownloadInterop?.downloadTextFile === 'function'");
+            
+            if (!jsObjectExists || !jsFunctionExists)
+            {
+                errorMessage = "JavaScript download functionality not loaded. Please refresh the page and try again.";
+                StateHasChanged();
+                return;
+            }
+            
+            // Get the current content from Monaco Editor
+            var content = await JSRuntime.InvokeAsync<string>("monacoEditorInterop.getValue");
+            
+            if (string.IsNullOrEmpty(content))
+            {
+                errorMessage = "No content to save. The editor is empty.";
+                StateHasChanged();
+                return;
+            }
+
+            // Determine filename - use current file name or default
+            var filename = !string.IsNullOrEmpty(currentFileName) 
+                ? currentFileName 
+                : $"edited-file-{DateTime.Now:yyyy-MM-dd-HH-mm-ss}.txt";
+
+            // Download the file using JavaScript interop
+            var success = await JSRuntime.InvokeAsync<bool>("fileDownloadInterop.downloadTextFile", content, filename);
+            
+            if (success)
+            {
+                successMessage = $"File '{filename}' has been downloaded successfully!";
+            }
+            else
+            {
+                errorMessage = "Failed to download the file. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving file: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
     }    private async Task ShareContent()
     {
         if (!editorInitialized)
