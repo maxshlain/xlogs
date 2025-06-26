@@ -2,6 +2,7 @@
 @using Microsoft.JSInterop
 @using System.Text
 @using Microsoft.AspNetCore.Components
+@using TextFileEditor.Services
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
@@ -353,8 +354,8 @@
                 return;
             }
 
-            // Add an additional newline after each existing newline
-            var paddedContent = content.Replace("\n", "\n\n");
+            // Use the TextProcessor service to pad lines
+            var paddedContent = TextProcessor.PadLines(content);
             
             // Set the modified content back to the editor
             await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setValue", paddedContent);
