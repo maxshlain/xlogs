@@ -39,6 +39,9 @@
                     <button class="btn btn-outline-secondary ms-2" @onclick="ShareContent" disabled="@(!editorInitialized || isLoading)">
                         <i class="bi bi-share"></i> Share
                     </button>
+                    <button class="btn btn-info ms-2" @onclick="PadLines" disabled="@(!HasContent() || isLoading)">
+                        <i class="bi bi-arrow-return-right"></i> Pad Lines
+                    </button>
                 </div>
                 @if (hasUrlContent)
                 {
@@ -325,6 +328,52 @@
         {
             StateHasChanged();
         }
+    }
+
+    private async Task PadLines()
+    {
+        if (!editorInitialized)
+        {
+            errorMessage = "Editor not initialized yet.";
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            errorMessage = "";
+            successMessage = "";
+            
+            var content = await JSRuntime.InvokeAsync<string>("monacoEditorInterop.getValue");
+            
+            if (string.IsNullOrEmpty(content))
+            {
+                errorMessage = "No content to pad. Please load a file or add some content first.";
+                StateHasChanged();
+                return;
+            }
+
+            // Add an additional newline after each existing newline
+            var paddedContent = content.Replace("\n", "\n\n");
+            
+            // Set the modified content back to the editor
+            await JSRuntime.InvokeVoidAsync("monacoEditorInterop.setValue", paddedContent);
+            
+            successMessage = "Lines have been padded successfully!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error padding lines: {ex.Message}";
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private bool HasContent()
+    {
+        return editorInitialized && (!string.IsNullOrEmpty(currentFileName) || hasUrlContent);
     }
 
     private string DetectLanguageFromExtension(string extension)
