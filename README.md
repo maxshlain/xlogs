@@ -4,7 +4,7 @@ A Blazor WebAssembly single-page application that allows users to upload text fi
 
 ## 🚀 Live Demo
 
-The application is automatically deployed to GitHub Pages: [https://maximshlain.github.io/xlogs/](https://maximshlain.github.io/xlogs/)
+The application is automatically deployed to GitHub Pages: [https://maxshlain.github.io/xlogs/](https://maximshlain.github.io/xlogs/)
 
 ## ✨ Features
 
@@ -74,7 +74,7 @@ curl -O https://maximshlain.github.io/xlogs/peek.py
 python peek.py mylog.txt
 
 # Or specify a custom base URL
-python peek.py mylog.txt https://maximshlain.github.io/xlogs/
+python peek.py mylog.txt https://maxshlain.github.io/xlogs/
 ```
 
 The script will automatically compress your file, encode it, and generate a complete shareable URL.
@@ -123,12 +123,12 @@ You can manually create shareable URLs by converting your local file content to 
    
    **For compressed content (recommended):**
    ```
-   https://maximshlain.github.io/xlogs/?content=COMPRESSED_BASE64_CONTENT&compressed=1&filename=mylog.txt
+   https://maxshlain.github.io/xlogs/?content=COMPRESSED_BASE64_CONTENT&compressed=1&filename=mylog.txt
    ```
    
    **For uncompressed content (legacy):**
    ```
-   https://maximshlain.github.io/xlogs/?content=BASE64_CONTENT&filename=mylog.txt
+   https://maxshlain.github.io/xlogs/?content=BASE64_CONTENT&filename=mylog.txt
    ```
    Replace `COMPRESSED_BASE64_CONTENT` or `BASE64_CONTENT` with the output from step 1.
 
@@ -148,7 +148,7 @@ This is a test log file.
 
 **Generated URL:**
 ```
-https://maximshlain.github.io/xlogs/?content=SGVsbG8gV29ybGQhClRoaXMgaXMgYSB0ZXN0IGxvZyBmaWxlLg&filename=test.log
+https://maxshlain.github.io/xlogs/?content=SGVsbG8gV29ybGQhClRoaXMgaXMgYSB0ZXN0IGxvZyBmaWxlLg&filename=test.log
 ```
 
 ### Advantages of URL Sharing
@@ -199,7 +199,7 @@ To run the project locally:
 
 ```bash
 # Clone the repository
-git clone https://github.com/maximshlain/xlogs.git
+git clone https://github.com/maxshlain/xlogs.git
 cd xlogs
 
 # Restore dependencies
