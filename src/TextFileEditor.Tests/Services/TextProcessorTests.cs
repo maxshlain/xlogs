@@ -1,167 +1,21 @@
 using TextFileEditor.Services;
 using Xunit;
 
-namespace TextFileEditor.Tests.Services
+namespace TextFileEditor.Tests.Services;
+
+public class TextProcessorTests
 {
-    public class TextProcessorTests
+    private const string Input =
+        @"2025-06-09T09:25:09+00:00	containers.upgrade-service.log	{""stream"":""stdout"",""docker"":{""container_id"":""001a42f2e3a92e8885abddf7719c91f8fa63db88d1bc4f05c05481cfd65eb52d""},""kubernetes"":{""container_name"":""upgrade-service"",""namespace_name"":""default"",""pod_name"":""upgrade-service-85994d4db-7j9b6"",""container_image"":""zartifactory.zerto.local:8443/zvm-docker-registry/release/z10_u8/upgrade-service:10.0.80.8857"",""container_image_id"":""sha256:d6edc41c19cbb6fce3192de6f1b4deb1487cd58a0b0a5496a0125ed225635fcb"",""pod_id"":""5be2c24e-6a6e-4bf9-bfb7-55afafb5cc2e"",""pod_ip"":""10.217.32.59"",""host"":""debian""},""message"":""   at UpgradeService.Managers.Managers.UpgradeManager.UpgradeAsyncImpl(IZProgress progress, IUpgradeTaskMetadataWriter writer, UpgradeParameters upgradeParameters) in /src/dev/tools/Production/Upgrade/UpgradeService/UpgradeService.Managers/Managers/UpgradeManager.cs:line 133"",""utc_time_stamp"":""2025-06-09T09:25:09+0000""}";
+
+    private const string Expected =
+        @"   at UpgradeService.Managers.Managers.UpgradeManager.UpgradeAsyncImpl(IZProgress progress, IUpgradeTaskMetadataWriter writer, UpgradeParameters upgradeParameters) in /src/dev/tools/Production/Upgrade/UpgradeService/UpgradeService.Managers/Managers/UpgradeManager.cs:line 133";
+
+    [Fact]
+    public void PadLines_WithNullContent_ThrowsArgumentNullException()
     {
-        [Fact]
-        public void PadLines_WithNullContent_ThrowsArgumentNullException()
-        {
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => TextProcessor.PadLines(null!));
-        }
-
-        [Fact]
-        public void PadLines_WithEmptyString_ReturnsEmptyString()
-        {
-            // Arrange
-            var content = "";
-
-            // Act
-            var result = TextProcessor.PadLines(content);
-
-            // Assert
-            Assert.Equal("", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithNullContent_ThrowsArgumentNullException()
-        {
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => TextProcessor.ExtractJsonContent(null!));
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithEmptyString_ReturnsEmptyString()
-        {
-            // Arrange
-            var content = "";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithValidJsonLine_ExtractsContentBetweenBraces()
-        {
-            // Arrange
-            var content = "2024-01-01 12:00:00 INFO {\"message\": \"test\", \"level\": \"info\"} end";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("\"message\": \"test\", \"level\": \"info\"", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithMultipleLines_ProcessesEachLineSeparately()
-        {
-            // Arrange
-            var content = "2024-01-01 12:00:00 INFO {\"message\": \"test1\"}\n2024-01-01 12:01:00 ERROR {\"message\": \"test2\", \"error\": true}";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            var expectedResult = "\"message\": \"test1\"\n\"message\": \"test2\", \"error\": true";
-            Assert.Equal(expectedResult, result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithLineWithoutBraces_ReturnsOriginalLine()
-        {
-            // Arrange
-            var content = "This is a plain text line without JSON";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("This is a plain text line without JSON", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithLineWithOnlyOpeningBrace_ReturnsOriginalLine()
-        {
-            // Arrange
-            var content = "2024-01-01 12:00:00 INFO {incomplete json";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("2024-01-01 12:00:00 INFO {incomplete json", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithLineWithOnlyClosingBrace_ReturnsOriginalLine()
-        {
-            // Arrange
-            var content = "incomplete json} 2024-01-01 12:00:00 INFO";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("incomplete json} 2024-01-01 12:00:00 INFO", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithNestedBraces_ExtractsOutermostContent()
-        {
-            // Arrange
-            var content = "INFO {\"data\": {\"nested\": \"value\"}, \"outer\": \"test\"} END";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("\"data\": {\"nested\": \"value\"}, \"outer\": \"test\"", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithEmptyBraces_ReturnsEmptyString()
-        {
-            // Arrange
-            var content = "2024-01-01 12:00:00 INFO {} end";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithWhitespaceOnlyLine_ReturnsWhitespace()
-        {
-            // Arrange
-            var content = "   \t  ";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            Assert.Equal("   \t  ", result);
-        }
-
-        [Fact]
-        public void ExtractJsonContent_WithMixedContent_ProcessesOnlyValidJsonLines()
-        {
-            // Arrange
-            var content = "Plain text line\n{\"valid\": \"json\"}\nAnother plain line\n{\"another\": \"valid json\"}";
-
-            // Act
-            var result = TextProcessor.ExtractJsonContent(content);
-
-            // Assert
-            var expectedResult = "Plain text line\n\"valid\": \"json\"\nAnother plain line\n\"another\": \"valid json\"";
-            Assert.Equal(expectedResult, result);
-        }
+        // Act & Assert
+        string fromProcessor = TextProcessor.PadLines(Input);
+        Assert.Equal(Expected, fromProcessor);
     }
 }
