@@ -53,13 +53,24 @@ namespace TextFileEditor.Services
             return string.Join("\n", processedLines);
         }
 
-        /// <summary>
-        /// Extracts JSON content from a single line by finding the first '{' and last '}'
-        /// and returning everything between them (excluding the braces)
-        /// </summary>
-        /// <param name="line">The line to process</param>
-        /// <returns>The JSON content without outer braces, or the original line if no valid JSON structure is found</returns>
         private static string ExtractJsonFromLine(string line)
+        {
+            try
+            {
+                var raw = ExtractJsonFromLineImpl(line) ?? "";
+                // |requestId: |responseId: |eventId: 
+                return raw
+                    .Replace("requestId: |", "")
+                    .Replace("responseId: |", "")
+                    .Replace("eventId: |", "");
+            }
+            catch (Exception)
+            {
+                return line;
+            }
+        }
+
+        private static string ExtractJsonFromLineImpl(string line)
         {
             if (string.IsNullOrEmpty(line))
                 return line;
@@ -73,7 +84,20 @@ namespace TextFileEditor.Services
                 // Extract content between braces (excluding the braces themselves)
                 int startIndex = firstBraceIndex + 1;
                 int length = lastBraceIndex - firstBraceIndex - 1;
-                return line.Substring(startIndex, length);
+                string body = line.Substring(startIndex, length);
+
+                var bodyParts = body.Split(new[] { "message\":" }, StringSplitOptions.RemoveEmptyEntries);
+                var rawMessage = bodyParts.Last();
+                var rawMessageParts = rawMessage.Split(new[] { "\",\"utc_time_stamp\":" },
+                    StringSplitOptions.RemoveEmptyEntries);
+                var messageLeft = rawMessageParts.FirstOrDefault() ?? "";
+
+                if (messageLeft.StartsWith("\""))
+                {
+                    messageLeft = messageLeft.Substring(1);
+                }
+
+                return messageLeft;
             }
 
             // If no valid JSON structure found, return the original line
