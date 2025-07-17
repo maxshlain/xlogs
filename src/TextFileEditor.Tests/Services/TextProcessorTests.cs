@@ -12,7 +12,7 @@ public class TextProcessorTests
         @"   at UpgradeService.Managers.Managers.UpgradeManager.UpgradeAsyncImpl(IZProgress progress, IUpgradeTaskMetadataWriter writer, UpgradeParameters upgradeParameters) in /src/dev/tools/Production/Upgrade/UpgradeService/UpgradeService.Managers/Managers/UpgradeManager.cs:line 133";
 
     [Fact]
-    public void PadLines_WithNullContent_ThrowsArgumentNullException()
+    public void PadsAsExpected()
     {
         // Act & Assert
         string fromProcessor = TextProcessor.PadLines(Input);
