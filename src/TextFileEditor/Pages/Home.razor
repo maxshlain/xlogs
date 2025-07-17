@@ -40,16 +40,8 @@
                     <button class="btn btn-outline-secondary ms-2" @onclick="ShareContent" disabled="@(!editorInitialized || isLoading)">
                         <i class="bi bi-share"></i> Share
                     </button>
-                    <button class="btn btn-info ms-2" @onclick="PadLines" disabled="@(!HasContent() || isLoading || isPaddingLines)">
-                        @if (isPaddingLines)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            <p>Processing...</p>
-                        }
-                        else
-                        {
-                            <i class="bi bi-arrow-return-right"></i> <p>Pad Lines</p>
-                        }
+                    <button class="btn btn-info ms-2" @onclick="PadLines" disabled="@(!HasContent() || isLoading)">
+                        <i class="bi bi-arrow-return-right"></i> Pad Lines
                     </button>
                 </div>
                 @if (hasUrlContent)
@@ -118,7 +110,6 @@
 
 @code {
     private ElementReference fileInput;    private bool isLoading = false;
-    private bool isPaddingLines = false;
     private string errorMessage = "";
     private string successMessage = "";
     private string currentFileName = "";
@@ -349,13 +340,11 @@
             return;
         }
 
-        isPaddingLines = true;
-        errorMessage = "";
-        successMessage = "";
-        StateHasChanged();
-
         try
-        {            
+        {
+            errorMessage = "";
+            successMessage = "";
+            
             var content = await JSRuntime.InvokeAsync<string>("monacoEditorInterop.getValue");
             
             if (string.IsNullOrEmpty(content))
@@ -379,14 +368,13 @@
         }
         finally
         {
-            isPaddingLines = false;
             StateHasChanged();
         }
     }
 
     private bool HasContent()
     {
-        return editorInitialized;
+        return editorInitialized && (!string.IsNullOrEmpty(currentFileName) || hasUrlContent);
     }
 
     private string DetectLanguageFromExtension(string extension)
